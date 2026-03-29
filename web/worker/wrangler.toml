@@ -1,0 +1,32 @@
+name = "minutes-worker"
+main = "src/index.ts"
+compatibility_date = "2024-06-01"
+
+# Force Worker to run near backend APIs (US) to avoid Gemini geo-restrictions
+[placement]
+mode = "smart"
+
+[vars]
+GEMINI_MODEL = "gemini-3-flash-preview"
+CLAUDE_MODEL = "claude-sonnet-4-6"
+MAX_UPLOAD_SIZE_MB = "100"
+
+# R2 bucket for audio files and results
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "minutes-audio"
+
+# KV namespace for job status
+[[kv_namespaces]]
+binding = "JOB_STATUS"
+id = "551040bd4c18419382dfda65a4d01ee8"
+
+# Durable Object for job processing
+[durable_objects]
+bindings = [
+  { name = "JOB_PROCESSOR", class_name = "JobProcessor" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["JobProcessor"]

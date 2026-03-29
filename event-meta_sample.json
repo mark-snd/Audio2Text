@@ -1,0 +1,21 @@
+{
+  "_comment": "This explains the file name",
+  "name": "enve-meta.json",
+  "event_name": "예스24 본부장과 AI 적용 방안 논의",
+  "date": "2026-03-27",
+  "speakers": [
+    {
+      "name": "Victor",
+      "role": "발표자, Product Manager"
+    },
+    {
+      "name": "Patrick",
+      "role": "Engineer"
+    }
+  ],
+  "terminology": [
+    "GA4",
+    "YES24",
+    "SNDWorks"
+  ]
+}

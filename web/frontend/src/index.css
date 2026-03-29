@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Progress bar shimmer animation */
+@keyframes progress-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.progress-bar-active {
+  background: linear-gradient(
+    90deg,
+    var(--color-blue-600) 0%,
+    var(--color-blue-400) 50%,
+    var(--color-blue-600) 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 2s ease-in-out infinite;
+}
+
+/* Pulsing ring for active step */
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.6); }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}

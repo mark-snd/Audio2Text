@@ -1,0 +1,59 @@
+# Environment variables
+.env
+.dev.vars
+
+# Node
+node_modules/
+dist/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output files
+*.txt.bak
+result.txt
+result_refined.txt
+
+# Logs
+*.log
+
+# Audio files
+audio/
+test/*.m4a
+
+# Generated output
+output/
+
+# Backup
+backup/
+
+# Generated transcripts
+transcript.txt
+transcript_original.txt
+
+# Sensitive config
+event-meta.json
+
+# Wrangler state
+.wrangler/
