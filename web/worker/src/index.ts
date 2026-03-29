@@ -52,9 +52,7 @@ app.use("/api/*", async (c, next) => {
     return next();
   }
 
-  const passcode =
-    c.req.header("X-Passcode") ||
-    new URL(c.req.url).searchParams.get("passcode");
+  const passcode = c.req.header("X-Passcode");
   if (!passcode || passcode !== c.env.APP_PASSCODE) {
     return c.json({ error: "Unauthorized" }, 401);
   }

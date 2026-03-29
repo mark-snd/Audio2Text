@@ -139,7 +139,10 @@ export async function getResult(jobId: string): Promise<JobResult> {
   return res.json();
 }
 
-export function getDownloadUrl(jobId: string): string {
-  const passcode = getPasscode();
-  return `${API_BASE}/download/${jobId}${passcode ? `?passcode=${encodeURIComponent(passcode)}` : ""}`;
+export async function downloadFile(jobId: string): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/download/${jobId}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to download");
+  return res.blob();
 }

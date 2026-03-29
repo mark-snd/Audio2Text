@@ -93,13 +93,12 @@ import urllib.request
 from pathlib import Path
 from textwrap import dedent
 
-# Fix SSL certificate verification issues (for corporate proxies/firewalls)
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
+# Optionally disable SSL verification for corporate proxies/firewalls
+if os.environ.get("DISABLE_SSL_VERIFY", "").lower() in ("1", "true", "yes"):
+    try:
+        ssl._create_default_https_context = ssl._create_unverified_context
+    except AttributeError:
+        pass
 
 # Load environment variables from .env file
 try:

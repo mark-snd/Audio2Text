@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getDownloadUrl, type JobResult } from "../api/client";
+import { downloadFile, type JobResult } from "../api/client";
 
 interface Props {
   result: JobResult;
@@ -23,6 +23,16 @@ export function ResultViewer({ result, onReset }: Props) {
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = async () => {
+    const blob = await downloadFile(result.jobId);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${result.jobId}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const transcriptText = () =>
@@ -92,13 +102,12 @@ export function ResultViewer({ result, onReset }: Props) {
         >
           {copied ? "복사됨!" : "복사"}
         </button>
-        <a
-          href={getDownloadUrl(result.jobId)}
-          download
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm inline-block"
+        <button
+          onClick={handleDownload}
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
         >
           다운로드 (.md)
-        </a>
+        </button>
         <button
           onClick={onReset}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"

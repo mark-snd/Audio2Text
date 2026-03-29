@@ -55,5 +55,11 @@ transcript_original.txt
 # Sensitive config
 event-meta.json
 
+# Test scripts with credentials
+web/test_api.py
+
+# Generated meeting minutes
+meeting_minutes.md
+
 # Wrangler state
 .wrangler/
