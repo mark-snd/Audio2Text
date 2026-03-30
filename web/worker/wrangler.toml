@@ -8,7 +8,6 @@ mode = "smart"
 
 [vars]
 GEMINI_MODEL = "gemini-3-flash-preview"
-CLAUDE_MODEL = "claude-sonnet-4-6"
 MAX_UPLOAD_SIZE_MB = "100"
 
 # R2 bucket for audio files and results
