@@ -4,10 +4,8 @@ export interface Env {
   JOB_STATUS: KVNamespace;
   JOB_PROCESSOR: DurableObjectNamespace;
   GEMINI_API_KEY: string;
-  ANTHROPIC_API_KEY: string;
   APP_PASSCODE: string;
   GEMINI_MODEL: string;
-  CLAUDE_MODEL: string;
   MAX_UPLOAD_SIZE_MB: string;
 }
 
@@ -46,9 +44,6 @@ export interface EventMeta {
   terminology?: string[];
 }
 
-// Minutes engine selection
-export type MinutesEngine = "claude" | "gemini";
-
 // API request/response types
 export interface UploadResponse {
   jobId: string;
@@ -58,7 +53,6 @@ export interface UploadResponse {
 
 export interface ProcessRequest {
   eventMeta?: EventMeta;
-  minutesEngine?: MinutesEngine;
 }
 
 export interface StatusResponse extends JobStatus {}

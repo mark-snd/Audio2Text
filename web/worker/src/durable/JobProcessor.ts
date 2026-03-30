@@ -3,21 +3,19 @@
  *
  * Uses alarms for reliable long-running execution:
  * 1. fetch() stores job params and schedules an immediate alarm
- * 2. alarm() runs the actual pipeline (Gemini → Claude)
+ * 2. alarm() runs the actual pipeline (Gemini transcription → Gemini minutes)
  *
  * This decouples the pipeline from the calling Worker's lifecycle,
  * preventing timeouts from killing the processing.
  */
-import type { Env, JobStatus, EventMeta, MinutesEngine } from "../types";
+import type { Env, JobStatus, EventMeta } from "../types";
 import { transcribeAudio } from "../services/gemini";
-import { generateMinutes } from "../services/claude";
 import { generateMinutesGemini } from "../services/gemini-minutes";
 
 interface JobParams {
   jobId: string;
   filename: string;
   eventMeta?: EventMeta;
-  minutesEngine?: MinutesEngine;
 }
 
 export class JobProcessor implements DurableObject {
@@ -56,7 +54,7 @@ export class JobProcessor implements DurableObject {
     const params = await this.state.storage.get<JobParams>("jobParams");
     if (!params) return;
 
-    await this.runPipeline(params.jobId, params.filename, params.eventMeta, params.minutesEngine);
+    await this.runPipeline(params.jobId, params.filename, params.eventMeta);
 
     // Clean up stored params
     await this.state.storage.delete("jobParams");
@@ -99,8 +97,7 @@ export class JobProcessor implements DurableObject {
   private async runPipeline(
     jobId: string,
     filename: string,
-    eventMeta?: EventMeta,
-    minutesEngine?: MinutesEngine
+    eventMeta?: EventMeta
   ): Promise<void> {
     try {
       // Step 1: Fetch audio from R2
@@ -138,24 +135,15 @@ export class JobProcessor implements DurableObject {
         { httpMetadata: { contentType: "application/json" } }
       );
 
-      // Step 3: Generate minutes with chosen engine
-      const useGemini = minutesEngine === "gemini";
-      const engineLabel = useGemini ? "Gemini" : "Claude";
-      await this.updateStatus(jobId, "generating_minutes", 60, `회의록 생성 중 (${engineLabel})...`);
+      // Step 3: Generate minutes with Gemini
+      await this.updateStatus(jobId, "generating_minutes", 60, "회의록 생성 중 (Gemini)...");
 
-      const minutes = useGemini
-        ? await generateMinutesGemini(
-            segments,
-            this.env.GEMINI_API_KEY,
-            this.env.GEMINI_MODEL,
-            eventMeta
-          )
-        : await generateMinutes(
-            segments,
-            this.env.ANTHROPIC_API_KEY,
-            this.env.CLAUDE_MODEL,
-            eventMeta
-          );
+      const minutes = await generateMinutesGemini(
+        segments,
+        this.env.GEMINI_API_KEY,
+        this.env.GEMINI_MODEL,
+        eventMeta
+      );
 
       // Save minutes to R2
       await this.env.BUCKET.put(`results/${jobId}/minutes.md`, minutes, {

@@ -7,7 +7,6 @@ import {
   type JobStatus,
   type JobResult,
   type EventMeta,
-  type MinutesEngine,
 } from "../api/client";
 
 export type AppState = "idle" | "uploading" | "processing" | "completed" | "error";
@@ -106,7 +105,7 @@ export function useJob() {
     return stopPolling;
   }, [jobId, appState, stopPolling, stopInterpolation]);
 
-  const submit = async (file: File, eventMeta?: EventMeta, minutesEngine?: MinutesEngine) => {
+  const submit = async (file: File, eventMeta?: EventMeta) => {
     try {
       setError("");
       setResult(null);
@@ -124,7 +123,7 @@ export function useJob() {
 
       // Start processing
       setAppState("processing");
-      await startProcessing(id, eventMeta, minutesEngine);
+      await startProcessing(id, eventMeta);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
       setAppState("error");

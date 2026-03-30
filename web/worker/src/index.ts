@@ -157,7 +157,6 @@ app.post("/api/process/:jobId", async (c) => {
       jobId,
       filename: status.filename,
       eventMeta: body.eventMeta,
-      minutesEngine: body.minutesEngine,
     }),
   });
 

@@ -67,7 +67,7 @@ export default function App() {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-8">
-          Gemini (transcription) + Gemini/Claude (minutes) | Cloudflare Workers | v0.3.0
+          Gemini (transcription + minutes) | Cloudflare Workers | v0.3.0
         </p>
       </div>
     </div>

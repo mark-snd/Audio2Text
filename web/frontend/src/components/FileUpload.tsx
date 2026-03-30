@@ -1,8 +1,8 @@
 import { useState, useRef, type DragEvent } from "react";
-import type { EventMeta, MinutesEngine } from "../api/client";
+import type { EventMeta } from "../api/client";
 
 interface Props {
-  onSubmit: (file: File, eventMeta?: EventMeta, minutesEngine?: MinutesEngine) => void;
+  onSubmit: (file: File, eventMeta?: EventMeta) => void;
   disabled?: boolean;
 }
 
@@ -16,7 +16,6 @@ export function FileUpload({ onSubmit, disabled }: Props) {
   const [date, setDate] = useState("");
   const [speakers, setSpeakers] = useState("");
   const [terminology, setTerminology] = useState("");
-  const [minutesEngine, setMinutesEngine] = useState<MinutesEngine>("gemini");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
@@ -60,7 +59,7 @@ export function FileUpload({ onSubmit, disabled }: Props) {
       }
     }
 
-    onSubmit(file, eventMeta, minutesEngine);
+    onSubmit(file, eventMeta);
   };
 
   const formatSize = (bytes: number) => {
@@ -186,34 +185,12 @@ export function FileUpload({ onSubmit, disabled }: Props) {
         )}
       </div>
 
-      {/* Minutes engine selector */}
+      {/* Minutes engine info */}
       <div className="flex items-center gap-3">
         <span className="text-sm text-gray-600 whitespace-nowrap">회의록 AI:</span>
-        <div className="flex gap-2 flex-1">
-          <button
-            type="button"
-            onClick={() => setMinutesEngine("gemini")}
-            className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border transition-colors ${
-              minutesEngine === "gemini"
-                ? "bg-blue-50 border-blue-500 text-blue-700"
-                : "border-gray-300 text-gray-500 hover:border-gray-400"
-            }`}
-          >
-            Gemini
-            <span className="block text-xs font-normal opacity-70">빠름 · 저렴</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMinutesEngine("claude")}
-            className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border transition-colors ${
-              minutesEngine === "claude"
-                ? "bg-blue-50 border-blue-500 text-blue-700"
-                : "border-gray-300 text-gray-500 hover:border-gray-400"
-            }`}
-          >
-            Claude
-            <span className="block text-xs font-normal opacity-70">고품질</span>
-          </button>
+        <div className="flex-1 py-2 px-3 text-sm font-medium rounded-lg border bg-blue-50 border-blue-500 text-blue-700">
+          Gemini
+          <span className="block text-xs font-normal opacity-70">빠름 · 저렴</span>
         </div>
       </div>
 

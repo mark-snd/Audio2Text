@@ -18,7 +18,7 @@ interface StepInfo {
 const STEPS: StepInfo[] = [
   { label: "업로드", key: "uploaded", hint: null },
   { label: "음성 인식 (Gemini)", key: "transcribing", hint: "보통 1~3분 소요" },
-  { label: "회의록 생성 (Claude)", key: "generating_minutes", hint: "보통 1~2분 소요" },
+  { label: "회의록 생성 (Gemini)", key: "generating_minutes", hint: "보통 1~2분 소요" },
   { label: "완료", key: "completed", hint: null },
 ];
 

@@ -83,17 +83,14 @@ export interface EventMeta {
   terminology?: string[];
 }
 
-export type MinutesEngine = "claude" | "gemini";
-
 export async function startProcessing(
   jobId: string,
   eventMeta?: EventMeta,
-  minutesEngine?: MinutesEngine
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/process/${jobId}`, {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ eventMeta, minutesEngine }),
+    body: JSON.stringify({ eventMeta }),
   });
 
   if (!res.ok) {
