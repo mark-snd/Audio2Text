@@ -48,6 +48,18 @@ Replace the placeholder KV namespace IDs with the real ones from step 1.
 
 ### 3. Local Development
 
+#### 빠른 시작 (권장)
+
+```bash
+./start.sh
+```
+
+Worker와 Frontend를 동시에 시작합니다. Ctrl+C로 둘 다 종료됩니다.
+
+브라우저에서 http://localhost:5173 접속 후 패스코드 입력.
+
+#### 수동 실행
+
 ```bash
 # Terminal 1: Worker (port 8787)
 cd worker
