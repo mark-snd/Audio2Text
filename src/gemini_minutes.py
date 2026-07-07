@@ -83,14 +83,76 @@ MINUTES_PROMPT = """당신은 회의록 작성 전문가입니다. 주어진 회
 8. 반드시 한국어로 작성
 9. 다음 회사명은 반드시 공식 명칭을 사용:
    - SNDWorks
-   - YES24
+   - YES24 (예스24)
    - 동아출판
-   - GripLaps"""
+   - GripLabs
+   - DCinside (회의에서 'DC'로 약칭하기도 함)
+10. 다음 고유명사를 정확히 표기:
+    - Kimi (기미X, 키미X)
+    - Deepseek (딥시크X)
+    - AX (NX는 오타)
+    - Sarak (사라X, 사랑X)
+11. 메타 정보에 speaker_mapping이 있으면, 녹취록의 화자 ID(S0, S1 등)를 해당 이름으로 치환하여 작성"""
+
+
+LECTURE_PROMPT = """당신은 강의 내용을 정리하는 전문가입니다. 주어진 강의 녹취록을 바탕으로 한국어 강의록(강의 노트)을 작성하세요.
+
+다음 형식을 따르세요:
+
+# 강의록
+
+## 강의 개요
+- 일시:
+- 강사: (녹취록에서 파악 가능한 경우)
+- 주제:
+- 한 줄 요약: (강의 전체를 한 문장으로)
+
+## 핵심 주제
+(강의를 논리적 흐름에 따라 주제별로 정리)
+
+### 1. [소주제 제목]
+- 강사가 전달한 핵심 내용
+- 사용한 예시·비유·사례 (강의의 핵심이므로 반드시 포함)
+- 강조하거나 반복한 포인트
+
+### 2. [소주제 제목]
+...
+
+## 주요 개념·용어
+- **용어**: 강의에서 설명한 정의/맥락
+
+## 강사의 핵심 주장과 인사이트
+- (강사가 강조한 관점, 결론, 통찰)
+
+## 인상적인 예시·사례
+- (기억할 만한 비유, 데이터, 스토리)
+
+## Q&A (있는 경우)
+- **질문**: ...
+- **답변**: ...
+
+## 핵심 정리 (Takeaways)
+- (강의에서 꼭 기억해야 할 3~5가지)
+
+작성 규칙:
+1. 강의 내용을 충실하게 정리하되, 단순 받아쓰기가 아니라 논리적 흐름으로 재구성
+2. 강사가 든 예시·비유·사례는 강의의 핵심이므로 절대 생략하지 말 것
+3. 구어체를 문어체로 변환하되, 강사의 강조점과 뉘앙스는 유지
+4. 숫자, 날짜, 통계, 고유명사는 반드시 정확히 포함
+5. 녹취록에 '[질문]', '[강사]' 표시가 있으면 Q&A 섹션으로 정리
+6. 반드시 한국어로 작성
+7. 다음 고유명사를 정확히 표기:
+   - Magnificent Seven (빅테크 7개사 별칭, '위대한 일곱'X)
+   - Kimi (기미X, 키미X)
+   - Deepseek (딥시크X)
+   - AX (NX는 오타)
+8. 의미가 불분명한 받아쓰기 오류는 문맥상 가장 그럴듯하게 보정하되, 추측이 과한 경우 원문을 유지"""
 
 
 def generate_minutes_gemini(
     transcript_text: str,
     event_meta: Optional[dict] = None,
+    mode: str = "meeting",
 ) -> str:
     """Generate meeting minutes from transcript text using Gemini.
 
@@ -103,6 +165,8 @@ def generate_minutes_gemini(
     """
     client = get_client()
 
+    system_prompt = LECTURE_PROMPT if mode == "lecture" else MINUTES_PROMPT
+
     user_content = transcript_text
 
     if event_meta:
@@ -114,13 +178,14 @@ def generate_minutes_gemini(
 녹취록:
 {transcript_text}"""
 
-    print(f"회의록 생성 중 ({GEMINI_MODEL})...")
+    doc_label = "강의록" if mode == "lecture" else "회의록"
+    print(f"{doc_label} 생성 중 ({GEMINI_MODEL})...")
 
     response = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=[{"text": user_content}],
         config=types.GenerateContentConfig(
-            system_instruction=MINUTES_PROMPT,
+            system_instruction=system_prompt,
             max_output_tokens=MAX_OUTPUT_TOKENS,
             temperature=0.3,
         ),
@@ -134,7 +199,7 @@ def generate_minutes_gemini(
             f"Gemini returned empty response (finish_reason={finish_reason})"
         )
 
-    print(f"회의록 생성 완료 (입력: {len(transcript_text):,}자 → 출력: {len(response.text):,}자)")
+    print(f"{doc_label} 생성 완료 (입력: {len(transcript_text):,}자 → 출력: {len(response.text):,}자)")
     return response.text
 
 
@@ -167,8 +232,8 @@ Examples:
     )
     parser.add_argument(
         "-m", "--meta",
-        default="event-meta.json",
-        help="Path to event-meta.json (default: event-meta.json)",
+        default=None,
+        help="Path to event-meta.json (default: None)",
     )
     parser.add_argument(
         "-p", "--presentation",
@@ -177,6 +242,13 @@ Examples:
     parser.add_argument(
         "-o", "--output",
         help="Output filename for meeting minutes (default: {stem}_minutes.md)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["meeting", "lecture"],
+        default="meeting",
+        help="Document style: 'meeting' produces meeting minutes (default); "
+             "'lecture' produces lecture notes and keeps the full talk verbatim",
     )
 
     args = parser.parse_args()
@@ -228,7 +300,7 @@ Examples:
         t0 = time.time()
 
         segments = audio_to_text(
-            str(audio_path), event_meta, presentation_context, output_dir=output_dir
+            str(audio_path), event_meta, presentation_context, output_dir=output_dir, mode=args.mode
         )
 
         # Save transcript JSON and TXT
@@ -244,7 +316,7 @@ Examples:
         sys.exit(1)
 
     # Step 2: Generate meeting minutes
-    print(f"\n=== Step 2: Meeting Minutes ===")
+    print(f"\n=== Step 2: {'Lecture Notes' if args.mode == 'lecture' else 'Meeting Minutes'} ===")
     transcript_text = segments_to_text(segments)
 
     if not transcript_text.strip():
@@ -252,12 +324,14 @@ Examples:
         sys.exit(1)
 
     t0 = time.time()
-    minutes = generate_minutes_gemini(transcript_text, event_meta)
+    minutes = generate_minutes_gemini(transcript_text, event_meta, mode=args.mode)
     print(f"Generation time: {time.time() - t0:.1f}s")
 
     # Save minutes
     if args.output:
         output_filename = args.output
+    elif args.mode == "lecture":
+        output_filename = f"{stem}_lecture_notes.md"
     else:
         output_filename = f"{stem}_minutes_gemini.md"
 

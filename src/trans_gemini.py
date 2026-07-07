@@ -31,7 +31,7 @@ from google.genai import types
 load_dotenv()
 
 # Constants
-GEMINI_MODEL = "gemini-2.5-pro"
+GEMINI_MODEL = os.getenv("GEMINI_TRANSCRIBE_MODEL", "gemini-2.5-pro")
 MAX_OUTPUT_TOKENS = 65536  # Maximum for Gemini 2.5 Flash
 
 # MIME type mapping for Gemini-compatible audio formats
@@ -193,18 +193,60 @@ def get_output_dir(custom_dir: Optional[Path] = None) -> Path:
 
 def build_transcription_prompt(
     event_meta: Optional[dict] = None,
-    presentation_context: Optional[str] = None
+    presentation_context: Optional[str] = None,
+    mode: str = "meeting"
 ) -> str:
     """Build the transcription prompt with optional event and presentation context.
 
     Args:
         event_meta: Optional event metadata dict for context
         presentation_context: Optional presentation text for terminology and structure context
+        mode: "meeting" (default) or "lecture". Lecture mode preserves the full
+            talk (examples, asides, audience Q&A) instead of stripping it.
 
     Returns:
         The transcription prompt string
     """
-    base_prompt = """Transcribe this audio and output ONLY a valid JSON array.
+    if mode == "lecture":
+        base_prompt = """Transcribe this lecture audio and output ONLY a valid JSON array.
+
+Output format - a JSON array of segments with timestamps:
+[
+    {"start_time": 0.0, "end_time": 5.2, "text": "First sentence here"},
+    {"start_time": 5.2, "end_time": 10.5, "text": "Second sentence here"}
+]
+
+Rules:
+1. COMPLETE & FAITHFUL TRANSCRIPTION: Transcribe the ENTIRE lecture verbatim from
+   start to finish. Do NOT summarize, paraphrase, or omit content. The goal is a
+   complete record of what the lecturer said.
+
+2. PRESERVE LECTURE CONTENT: Keep ALL of the following — they are the substance of
+   a lecture, not noise:
+   - The lecturer's introductions, framing, and asides
+   - Examples, analogies, stories, and digressions used to explain a point
+   - Audience questions and the lecturer's answers (Q&A)
+   - Repeated points made for emphasis (keep them; only drop verbatim stutters)
+
+3. TIMESTAMPS: Use seconds as float values (e.g., 65.5 for 1 minute 5.5 seconds).
+
+4. LANGUAGE: Transcribe in Korean if the speaker is speaking Korean. Preserve the
+   original language. Keep technical terms and proper nouns in their correct form
+   (e.g., "Magnificent Seven", not a literal translation).
+
+5. SPEAKER LABELS: This is primarily a single-speaker lecture. When the audio
+   clearly shifts to a different person (e.g. an audience question), prefix that
+   segment's text with a marker: "[질문]" for an audience question and "[강사]"
+   for the lecturer's reply. Do NOT add markers to the continuous lecture flow.
+
+6. REMOVE ONLY true noise:
+   - Verbatim hallucinations (the same short phrase repeated many times)
+   - Meaningless filler with no content (pure "음...", "어...") when isolated
+
+7. OUTPUT: Return ONLY the JSON array, no markdown code blocks, no explanations.
+"""
+    else:
+        base_prompt = """Transcribe this audio and output ONLY a valid JSON array.
 
 Output format - a JSON array of segments with timestamps:
 [
@@ -474,6 +516,7 @@ def transcribe_file(
     max_retries: int = 3,
     base_delay: float = 2.0,
     output_dir: Optional[Path] = None,
+    mode: str = "meeting",
 ) -> list[dict]:
     """Transcribe an audio file using Gemini.
 
@@ -493,7 +536,7 @@ def transcribe_file(
     """
     client = get_client()
     mime_type = get_mime_type(file_path)
-    prompt = build_transcription_prompt(event_meta, presentation_context)
+    prompt = build_transcription_prompt(event_meta, presentation_context, mode)
 
     for attempt in range(max_retries):
         try:
@@ -577,7 +620,8 @@ def audio_to_text(
     audio_path: str,
     event_meta: Optional[dict] = None,
     presentation_context: Optional[str] = None,
-    output_dir: Optional[Path] = None
+    output_dir: Optional[Path] = None,
+    mode: str = "meeting"
 ) -> list[dict]:
     """Convert audio file to timestamped text segments.
 
@@ -602,7 +646,7 @@ def audio_to_text(
             f"Supported formats: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
         )
 
-    return transcribe_file(file_path, event_meta, presentation_context, output_dir=output_dir)
+    return transcribe_file(file_path, event_meta, presentation_context, output_dir=output_dir, mode=mode)
 
 
 def save_transcript(segments: list[dict], output_path: str) -> None:
@@ -720,13 +764,21 @@ Examples:
 
     parser.add_argument(
         "-m", "--meta",
-        default="2.1-meta-to-append-to-system-prompt/event-meta.json",
-        help="Path to event-meta.json for context (default: 2.1-meta-to-append-to-system-prompt/event-meta.json)",
+        default=None,
+        help="Path to event-meta.json for context (default: None, only used if explicitly provided)",
     )
 
     parser.add_argument(
         "-p", "--presentation",
         help="Path to presentation text file (from pptx2text) for terminology context",
+    )
+
+    parser.add_argument(
+        "--mode",
+        choices=["meeting", "lecture"],
+        default="meeting",
+        help="Transcription style: 'meeting' strips chatter/moderator noise (default); "
+             "'lecture' keeps the full talk (examples, asides, Q&A) verbatim",
     )
 
     parser.add_argument(
@@ -831,7 +883,7 @@ Examples:
     start_time = time.time()
 
     try:
-        segments = audio_to_text(str(audio_path), event_meta, presentation_context, output_dir=output_path.parent)
+        segments = audio_to_text(str(audio_path), event_meta, presentation_context, output_dir=output_path.parent, mode=args.mode)
         duration = time.time() - start_time
 
         # Save output
