@@ -110,7 +110,7 @@ export class JobProcessor implements DurableObject {
       const audioData = await audioObject.arrayBuffer();
 
       // Step 2: Transcribe with Gemini
-      await this.updateStatus(jobId, "transcribing", 20, "음성 인식 중 (Gemini)...");
+      await this.updateStatus(jobId, "transcribing", 20, "음성 인식 중...");
 
       const segments = await transcribeAudio(
         audioData,
@@ -136,7 +136,7 @@ export class JobProcessor implements DurableObject {
       );
 
       // Step 3: Generate minutes with Gemini
-      await this.updateStatus(jobId, "generating_minutes", 60, "회의록 생성 중 (Gemini)...");
+      await this.updateStatus(jobId, "generating_minutes", 60, "회의록 생성 중...");
 
       const minutes = await generateMinutesGemini(
         segments,

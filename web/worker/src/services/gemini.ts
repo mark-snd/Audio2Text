@@ -259,12 +259,13 @@ export async function transcribeAudio(
     }, 300000); // clean up after 5 min
   }
 
-  // Generate transcription
+  // Generate transcription (15-min timeout — long meetings can take a while)
   const generateUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const generateRes = await fetch(generateUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(15 * 60 * 1000),
     body: JSON.stringify({
       contents: [
         {
@@ -370,13 +371,18 @@ async function uploadToGeminiFileApi(
   };
 
   let fileState = result.file.state;
-  while (fileState === "PROCESSING") {
+  const maxPolls = 150; // 5 minutes max (150 × 2s)
+  for (let poll = 0; poll < maxPolls && fileState === "PROCESSING"; poll++) {
     await new Promise((r) => setTimeout(r, 2000));
     const checkRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/${result.file.name}?key=${apiKey}`
     );
     const checkData = (await checkRes.json()) as { state: string };
     fileState = checkData.state;
+  }
+
+  if (fileState === "PROCESSING") {
+    throw new Error("Gemini file processing timed out after 5 minutes");
   }
 
   if (fileState === "FAILED") {
