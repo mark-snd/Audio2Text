@@ -63,3 +63,16 @@ meeting_minutes.md
 
 # Wrangler state
 .wrangler/
+web/worker/pages-dist/
+
+# Local data / transcripts (never commit)
+*-transcript.txt
+*-transcript_corrected.txt
+*-minutes.md
+
+# Claude Code local config
+.claude/
+
+# Private credentials / proxy configs
+web/worker/.dev.vars
+web/worker/secrets.json
